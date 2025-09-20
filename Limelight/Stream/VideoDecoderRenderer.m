@@ -247,9 +247,22 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit);
 
     SET_EXTENSION(kCMFormatDescriptionExtension_FormatName, @"av01");
     
-    // We use the value for YUV without alpha, same as Chrome
-    // https://developer.apple.com/library/archive/qa/qa1183/_index.html
-    SET_EXTENSION(kCMFormatDescriptionExtension_Depth, @24);
+    // Determine if this is YUV 4:4:4 (no chroma subsampling)
+    BOOL isYuv444 = (seqHeader->color_config.subsampling_x == 0 && seqHeader->color_config.subsampling_y == 0);
+    
+    // Set depth based on chroma subsampling
+    // For YUV 4:4:4, all three planes have full resolution, so we use 36 bits (12 bits per component)
+    // For YUV 4:2:0/4:2:2, we use 24 bits as before
+    if (isYuv444) {
+        SET_EXTENSION(kCMFormatDescriptionExtension_Depth, @36);
+        Log(LOG_I, @"AV1 stream detected as YUV 4:4:4 format (subsampling_x=0, subsampling_y=0)");
+    } else {
+        // We use the value for YUV without alpha, same as Chrome
+        // https://developer.apple.com/library/archive/qa/qa1183/_index.html
+        SET_EXTENSION(kCMFormatDescriptionExtension_Depth, @24);
+        Log(LOG_I, @"AV1 stream using subsampling (subsampling_x=%d, subsampling_y=%d)", 
+            seqHeader->color_config.subsampling_x, seqHeader->color_config.subsampling_y);
+    }
     
     CodedBitstreamAV1Context* bitstreamCtx = (CodedBitstreamAV1Context*)cbsCtx->priv_data;
     AV1RawSequenceHeader* seqHeader = bitstreamCtx->sequence_header;
@@ -362,7 +375,10 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit);
             break;
             
         default:
-            Log(LOG_W, @"Unsupported chroma_sample_position value: %d", seqHeader->color_config.chroma_sample_position);
+            // For YUV 4:4:4, chroma location is less relevant since there's no subsampling
+            if (!isYuv444) {
+                Log(LOG_W, @"Unsupported chroma_sample_position value: %d", seqHeader->color_config.chroma_sample_position);
+            }
             break;
     }
     
@@ -443,7 +459,8 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit);
                 parameterSetSizes[i] = parameterSet.length;
             }
             
-            Log(LOG_I, @"Constructing new H264 format description");
+            Log(LOG_I, @"Constructing new H264 format description%@", 
+                (videoFormat & VIDEO_FORMAT_MASK_444) ? @" (YUV 4:4:4 supported)" : @"");
             status = CMVideoFormatDescriptionCreateFromH264ParameterSets(kCFAllocatorDefault,
                                                                          parameterSetCount,
                                                                          parameterSetPointers,
@@ -469,7 +486,8 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit);
                 parameterSetSizes[i] = parameterSet.length;
             }
             
-            Log(LOG_I, @"Constructing new HEVC format description");
+            Log(LOG_I, @"Constructing new HEVC format description%@", 
+                (videoFormat & VIDEO_FORMAT_MASK_444) ? @" (YUV 4:4:4 supported)" : @"");
             
             NSMutableDictionary* videoFormatParams = [[NSMutableDictionary alloc] init];
             
@@ -500,7 +518,8 @@ int DrSubmitDecodeUnit(PDECODE_UNIT decodeUnit);
         else if (videoFormat & VIDEO_FORMAT_MASK_AV1) {
             NSData* fullFrameData = [NSData dataWithBytesNoCopy:data length:length freeWhenDone:NO];
             
-            Log(LOG_I, @"Constructing new AV1 format description");
+            Log(LOG_I, @"Constructing new AV1 format description%@", 
+                (videoFormat & VIDEO_FORMAT_MASK_444) ? @" (YUV 4:4:4 supported)" : @"");
             formatDesc = [self createAV1FormatDescriptionForIDRFrame:fullFrameData];
         }
         else {

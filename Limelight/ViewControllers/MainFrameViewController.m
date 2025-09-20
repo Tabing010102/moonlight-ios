@@ -667,6 +667,9 @@ static NSMutableSet* hostList;
 #if defined(__IPHONE_16_0) || defined(__TVOS_16_0)
             if (VTIsHardwareDecodeSupported(kCMVideoCodecType_AV1)) {
                 _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_AV1_MAIN8;
+                
+                // Add YUV 4:4:4 support for AV1 if available
+                _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_AV1_444_8;
             }
 #endif
             // Fall-through
@@ -675,29 +678,37 @@ static NSMutableSet* hostList;
         case CODEC_PREF_HEVC:
             if (VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC)) {
                 _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_H265;
+                
+                // Add YUV 4:4:4 support for HEVC if available
+                _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_H265_444;
             }
             // Fall-through
             
         case CODEC_PREF_H264:
             _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_H264;
+            
+            // Add YUV 4:4:4 support for H.264 if available
+            _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_H264_444;
             break;
     }
     
     // HEVC is supported if the user wants it (or it's required by the chosen resolution) and the SoC supports it
     if ((_streamConfig.width > 4096 || _streamConfig.height > 4096 || streamSettings.enableHdr) && VTIsHardwareDecodeSupported(kCMVideoCodecType_HEVC)) {
         _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_H265;
+        _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_H265_444;
         
         // HEVC Main10 is supported if the user wants it and the display supports it
         if (streamSettings.enableHdr && (AVPlayer.availableHDRModes & AVPlayerHDRModeHDR10) != 0) {
             _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_H265_MAIN10;
         }
     }
-    
+
 #if defined(__IPHONE_16_0) || defined(__TVOS_16_0)
-    // Add the AV1 Main10 format if AV1 and HDR are both enabled and supported
+    // Add the AV1 Main10 and 4:4:4 formats if AV1 and HDR are both enabled and supported
     if ((_streamConfig.supportedVideoFormats & VIDEO_FORMAT_MASK_AV1) && streamSettings.enableHdr &&
         VTIsHardwareDecodeSupported(kCMVideoCodecType_AV1) && (AVPlayer.availableHDRModes & AVPlayerHDRModeHDR10) != 0) {
         _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_AV1_MAIN10;
+        _streamConfig.supportedVideoFormats |= VIDEO_FORMAT_AV1_444_10;
     }
 #endif
 }
