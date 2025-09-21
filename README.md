@@ -1,3 +1,11 @@
+# :warning: TEMPORARY AND EXPERIMENTAL FORK
+
+**This is a highly experimental, temporary fork containing non-standard, "dirty" modifications to add HEVC Main10 YUV444 support for personal use only.**
+
+**WARNING:** These modifications are implemented as quick hacks with hardcoded values and non-idiomatic approaches. The code has poor quality and may contain bugs. **Use at your own risk. Not recommended for reference or production use.**
+
+---
+
 # Moonlight iOS/tvOS
 
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/kwv8vpwr457lqn25/branch/master?svg=true)](https://ci.appveyor.com/project/cgutman/moonlight-ios/branch/master)
