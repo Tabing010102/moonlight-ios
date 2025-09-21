@@ -95,6 +95,15 @@ void DrStop(void)
             else {
                 return @"HEVC Main 10 SDR";
             }
+        case VIDEO_FORMAT_H265_REXT8_444:
+            return @"HEVC RExt 4:4:4 8-bit";
+        case VIDEO_FORMAT_H265_REXT10_444:
+            if (LiGetCurrentHostDisplayHdrMode()) {
+                return @"HEVC RExt 4:4:4 10-bit HDR";
+            }
+            else {
+                return @"HEVC RExt 4:4:4 10-bit SDR";
+            }
         case VIDEO_FORMAT_AV1_MAIN8:
             return @"AV1";
         case VIDEO_FORMAT_AV1_MAIN10:
